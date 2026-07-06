@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>getitle</title>
+<style>
+  body {
+    font-family: "Segoe UI", "Meiryo", sans-serif;
+    margin: 16px;
+    background: #fafafa;
+    color: #222;
+  }
+  h1 {
+    font-size: 18px;
+    margin: 0 0 12px;
+  }
+  h1 .count {
+    font-size: 13px;
+    color: #888;
+    font-weight: normal;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .controls input[type="number"] {
+    width: 80px;
+    padding: 4px;
+  }
+  button {
+    padding: 4px 14px;
+    cursor: pointer;
+  }
+  fieldset {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 10px;
+    margin: 0;
+  }
+  legend {
+    font-size: 12px;
+    color: #666;
+    padding: 0 4px;
+  }
+  textarea {
+    width: 100%;
+    height: 70vh;
+    box-sizing: border-box;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    white-space: pre;
+  }
+  .status {
+    font-size: 12px;
+    color: #666;
+    margin: 6px 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>getitle: <span id="project-name"></span> <span class="count" id="total-count"></span></h1>
+
+<div class="controls">
+  <fieldset>
+    <legend>random</legend>
+    <input type="number" id="random-count" value="100" min="1">
+    <button id="random-button">Random</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>slice [start:end]</legend>
+    <input type="number" id="slice-start" placeholder="start">
+    <span>:</span>
+    <input type="number" id="slice-end" placeholder="end">
+    <button id="slice-button">Slice</button>
+  </fieldset>
+
+  <fieldset>
+    <legend>all</legend>
+    <button id="all-button">All</button>
+  </fieldset>
+
+  <button id="copy-button">Copy</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<textarea id="output" spellcheck="false"></textarea>
+
+<script>
+/*__DATA__*/
+
+const $ = id => document.getElementById(id);
+
+$('project-name').textContent = PROJECT_NAME;
+$('total-count').textContent = `(${TITLES.length} pages)`;
+document.title = `getitle ${PROJECT_NAME}`;
+
+function render(titles, label) {
+  $('output').value = titles.map(t => `[${t}]`).join('\n');
+  $('status').textContent = `${label}: ${titles.length} 件`;
+}
+
+function doRandom() {
+  const n = Math.min(parseInt($('random-count').value, 10) || 100, TITLES.length);
+  // Fisher-Yates を先頭 n 件だけ回す（部分シャッフル）
+  const pool = TITLES.slice();
+  for (let i = 0; i < n; i++) {
+    const j = i + Math.floor(Math.random() * (pool.length - i));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  render(pool.slice(0, n), `random ${n}`);
+}
+
+function doSlice() {
+  const rawStart = $('slice-start').value.trim();
+  const rawEnd = $('slice-end').value.trim();
+  // python の slice と同じ: 空欄は省略、負数は末尾から
+  const start = rawStart === '' ? undefined : parseInt(rawStart, 10);
+  const end = rawEnd === '' ? undefined : parseInt(rawEnd, 10);
+  render(TITLES.slice(start, end), `slice [${rawStart}:${rawEnd}]`);
+}
+
+function doAll() {
+  render(TITLES, 'all');
+}
+
+async function doCopy() {
+  await navigator.clipboard.writeText($('output').value);
+  const prev = $('status').textContent.replace(/ \(copied\)$/, '');
+  $('status').textContent = `${prev} (copied)`;
+}
+
+$('random-button').addEventListener('click', doRandom);
+$('slice-button').addEventListener('click', doSlice);
+$('all-button').addEventListener('click', doAll);
+$('copy-button').addEventListener('click', doCopy);
+
+// 起動時はランダム表示にしておく
+doRandom();
+</script>
+
+</body>
+</html>
